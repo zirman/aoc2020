@@ -64,47 +64,47 @@ fun parse(i: Int, ts: List<String>): Res<Exp>? {
     }
 }
 
-fun Exp.eval(): Long {
-    return when (this) {
-        is Exp.Group -> {
-            chain.fold(x.eval()) { acc, (operator, exp) ->
-                when (operator) {
-                    "+" -> acc + exp.eval()
-                    "*" -> acc * exp.eval()
-                    else -> throw Exception("Invalid Operator")
-                }
-            }
-        }
-
-        is Exp.Num -> this.x
-    }
-}
-
-fun Exp.eval2(): Long {
-    return when (this) {
-        is Exp.Group -> {
-            chain
-                .fold(listOf(x.eval2())) { acc, (operator, exp) ->
+fun main() {
+    fun Exp.eval(): Long {
+        return when (this) {
+            is Exp.Group -> {
+                chain.fold(x.eval()) { acc, (operator, exp) ->
                     when (operator) {
-                        "+" -> acc.subList(0, acc.size - 1).plus(acc.last() + exp.eval2())
-                        "*" -> acc.plus(exp.eval2())
+                        "+" -> acc + exp.eval()
+                        "*" -> acc * exp.eval()
                         else -> throw Exception("Invalid Operator")
                     }
                 }
-                .reduce { acc, l -> acc * l }
+            }
+
+            is Exp.Num -> this.x
         }
-
-        is Exp.Num -> this.x
     }
-}
 
-fun tokenize(line: String): List<String> {
-    return line.toList()
-        .joinToString("") { if (it == '(') "( " else if (it == ')') " )" else it.toString() }
-        .split(" ")
-}
+    fun Exp.eval2(): Long {
+        return when (this) {
+            is Exp.Group -> {
+                chain
+                    .fold(listOf(x.eval2())) { acc, (operator, exp) ->
+                        when (operator) {
+                            "+" -> acc.subList(0, acc.size - 1).plus(acc.last() + exp.eval2())
+                            "*" -> acc.plus(exp.eval2())
+                            else -> throw Exception("Invalid Operator")
+                        }
+                    }
+                    .reduce { acc, l -> acc * l }
+            }
 
-fun main() {
+            is Exp.Num -> this.x
+        }
+    }
+
+    fun tokenize(line: String): List<String> {
+        return line.toList()
+            .joinToString("") { if (it == '(') "( " else if (it == ')') " )" else it.toString() }
+            .split(" ")
+    }
+
     fun part1(input: List<String>): Long {
         return input.sumOf { line ->
             val ts = tokenize(line)
