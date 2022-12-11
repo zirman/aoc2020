@@ -1,12 +1,20 @@
 fun main() {
     fun part1(input: List<String>): Int {
-        val (a, b, c) = input.joinToString("\n").split("\n\n")
-        val ranges = a.split("\n").flatMap {
-            val (a, b, c, d) = Regex("""[\w\s]+: (\d+)-(\d+) or (\d+)-(\d+)""").matchEntire(it)!!.destructured
-            listOf(a.toInt()..b.toInt(), c.toInt()..d.toInt())
-        }.sortedBy { it.first }
+        val (fieldRangesStr, _, nearbyTicketsStr) =
+            input.joinToString("\n").split("\n\n")
 
-        return c.split("\n")
+        val ranges = fieldRangesStr
+            .split("\n")
+            .flatMap { line ->
+                val (start1, end1, start2, end2) = Regex("""[\w\s]+: (\d+)-(\d+) or (\d+)-(\d+)""")
+                    .matchEntire(line)!!.destructured
+
+                listOf(start1.toInt()..end1.toInt(), start2.toInt()..end2.toInt())
+            }
+            .sortedBy { it.first }
+
+        return nearbyTicketsStr
+            .split("\n")
             .drop(1)
             .flatMap { it.split(",") }
             .map { it.toInt() }
@@ -14,22 +22,23 @@ fun main() {
             .sum()
     }
 
-    fun part2(input: List<String>): Int {
-        val (a, b, c) = input.joinToString("\n").split("\n\n")
+    fun part2(input: List<String>): Long {
+        val (fieldRangesStr, yourTicketStr, nearbyTicketsStr) =
+            input.joinToString("\n").split("\n\n")
 
-        val fieldRanges = a
+        val fieldRanges = fieldRangesStr
             .split("\n")
             .map {
                 val (fieldName, start1, end1, start2, end2) = Regex("""([\w\s]+): (\d+)-(\d+) or (\d+)-(\d+)""")
-                    .matchEntire(it)!!
-                    .destructured
+                    .matchEntire(it)!!.destructured
 
                 Pair(fieldName, listOf(start1.toInt()..end1.toInt(), start2.toInt()..end2.toInt()))
             }
 
-        val ranges = fieldRanges.flatMap { (_, a) -> a }
+        val ranges = fieldRanges.flatMap { (_, ranges) -> ranges }.sortedBy { it.first }
 
-        val tickets = c.split("\n")
+        val tickets = nearbyTicketsStr
+            .split("\n")
             .drop(1)
             .mapNotNull { ticketLine ->
                 val xs = ticketLine.split(",").map { it.toInt() }
@@ -40,8 +49,9 @@ fun main() {
                 }
             }
 
-        val groups = tickets.first().indices
-            .map { c ->
+        val groups = tickets
+            .first()
+            .indices.map { c ->
                 Pair(
                     c,
                     tickets.indices
@@ -50,53 +60,41 @@ fun main() {
                 )
             }
 
-        groups.map { (c, set) ->
-            Pair(
-                c,
-                fieldRanges.filter { (_, ranges) ->
-                    val (r1, r2) = ranges
-                    set.all { r1.contains(it) || r2.contains(it) }
-                }
-            )
-        }.also { println(it) }
+        val yourTicket = yourTicketStr
+            .split("\n")
+            .drop(1)
+            .first()
+            .split(",")
+            .map { it.toInt() }
 
-//        fun foo(fr: List<Pair<String, List<IntRange>>>, gs: List<Pair<Int, Set<Int>>>) {
-//            if (fr.isEmpty()) return
-//
-//            val (fieldName, ranges) = fr[0]
-//            val (r1, r2) = ranges
-//            val (inner, outer) = groups
-//                .partition { (_, set) ->
-//                    set.all { r1.contains(it) || r2.contains(it) }
-//                }
-//            inner.indices.map { i ->
-//                foo(fr.subList(1, fr.size), outer.plus(inner.filterIndexed { k, _ -> i != k }))
-//            }
-//        }
-//
-//        foo(fieldRanges, groups)
-
-        TODO()
-
-//        perm(fieldRanges)
-//            .first { fieldRange ->
-//                groups.zip(fieldRange)
-//                    .all { (g, fr) ->
-//                        val (_, set) = g
-//                        val (r1, r2) = fr.second
-//                        set.all { r1.contains(it) || r2.contains(it) }
-//                    }
-//            }
-//            .filter { (fieldName) -> fieldName.startsWith("departure") }
-//            .also { println(it) }
-
+        return fieldRanges
+            .map { (fieldName, ranges) ->
+                Pair(
+                    fieldName,
+                    groups
+                        .filter { (_, set) -> set.all { ranges[0].contains(it) || ranges[1].contains(it) } }
+                        .map { (c) -> c }
+                )
+            }
+            .sortedBy { (_, cs) -> cs.size }
+            .fold(emptyList<Pair<String, Int>>()) { acc, (fieldName, cs) ->
+                acc.plus(
+                    Pair(
+                        fieldName,
+                        cs.filter { c -> acc.all { (_, k) -> k != c } }[0]
+                    )
+                )
+            }
+            .filter { (fieldName, _) -> fieldName.startsWith("departure ") }
+            .map { (_, c) -> yourTicket[c].toLong() }
+            .also { println(it) }
+            .reduce { a, b -> a * b }
     }
 
     // test if implementation meets criteria from the description, like:
-    val testInput = readInput("Day09_test")
+    val testInput = readInput("Day16_test")
     check(part1(testInput) == 71)
-    val input = readInput("Day09")
+    val input = readInput("Day16")
     println(part1(input))
-//    check(part2(readInput("Day09_test2")) == 13)
     println(part2(input))
 }
