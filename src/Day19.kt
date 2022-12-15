@@ -47,22 +47,22 @@ fun main() {
             .map { line ->
                 val ts = line.toList()
 
-                fun match(i: Int, rn: Int): Res<Unit>? {
-                    fun matchLeaf(i: Int, r: Rule.Leaf): Res<Unit>? {
+                fun match(i: Int, rn: Int): Int? {
+                    fun matchLeaf(i: Int, r: Rule.Leaf): Int? {
                         return if (i >= ts.size || ts[i] != r.t) null
-                        else Res(i + 1, Unit)
+                        else i + 1
                     }
 
-                    fun matchAnd(i: Int, r: Rule.And): Res<Unit>? {
+                    fun matchAnd(i: Int, r: Rule.And): Int? {
                         var k = i
                         for (q in r.rs) {
-                            val (l) = match(k, q) ?: return null
+                            val l = match(k, q) ?: return null
                             k = l
                         }
-                        return Res(k, Unit)
+                        return k
                     }
 
-                    fun matchOr(i: Int, r: Rule.Or): Res<Unit>? {
+                    fun matchOr(i: Int, r: Rule.Or): Int? {
                         return matchAnd(i, Rule.And(r.lrs)) ?: matchAnd(i, Rule.And(r.rrs))
                     }
 
@@ -73,7 +73,7 @@ fun main() {
                     }
                 }
 
-                (match(0, 0)?.let { (i) -> i == ts.size } ?: false)
+                match(0, 0) == ts.size
             }
             .count { it }
     }
@@ -114,21 +114,19 @@ fun main() {
             .map { line ->
                 val ts = line.toList()
 
-                fun match(i: Int, rn: Int): List<Res<Unit>> {
-                    fun matchLeaf(i: Int, r: Rule.Leaf): List<Res<Unit>> {
+                fun match(i: Int, rn: Int): List<Int> {
+                    fun matchLeaf(i: Int, r: Rule.Leaf): List<Int> {
                         return if (i >= ts.size || ts[i] != r.t) emptyList()
-                        else listOf(Res(i + 1, Unit))
+                        else listOf(i + 1)
                     }
 
-                    fun matchAnd(i: Int, r: Rule.And): List<Res<Unit>> {
-                        var ks = listOf(Res(i, Unit))
-                        for (q in r.rs) {
-                            ks = ks.flatMap { (k) -> match(k, q) }
+                    fun matchAnd(i: Int, r: Rule.And): List<Int> {
+                        return r.rs.fold(listOf(i)) { acc, q ->
+                            acc.flatMap { k -> match(k, q) }
                         }
-                        return ks
                     }
 
-                    fun matchOr(i: Int, r: Rule.Or): List<Res<Unit>> {
+                    fun matchOr(i: Int, r: Rule.Or): List<Int> {
                         return matchAnd(i, Rule.And(r.lrs)) + matchAnd(i, Rule.And(r.rrs))
                     }
 
@@ -139,7 +137,7 @@ fun main() {
                     }
                 }
 
-                match(0, 0).count { (i) -> i == ts.size }
+                match(0, 0).count { i -> i == ts.size }
             }
             .sum()
     }
